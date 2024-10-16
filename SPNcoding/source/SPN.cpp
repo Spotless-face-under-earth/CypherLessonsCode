@@ -1,20 +1,10 @@
 #include<iostream>
-#include<map>
 #include<string>
-#define ONE 1 ;
+#include<SPNCoding.h>
 using namespace std;
-map<int ,int>Smapping ={{0,14},{1,4},{2,13},{3,1},
-                        {4,2},{5,15},{6,11},{7,8},{8,3},{9,10},
-                        {10,6},{11,12},{12,5},{13,9},{14,0},{15,7}};
-
-map<int ,int>Pmapping ={{1, 1}, {2, 5}, {3, 9}, {4, 13},  
-                        {5, 2}, {6, 6}, {7, 10}, {8, 14},  
-                        {9, 3}, {10, 7}, {11, 11}, {12, 15},  
-                        {13, 4}, {14, 8}, {15, 12}, {16, 16}};
-int m=4,l=4,Nr=4;
-int K[32];
-int plainWords[16];
-int cyberWords[16];
+// int K[32]={0};
+// int plainWords[16]={0};
+// int cyberWords[16]={0};
 int paiS(int input)
 {
     auto it = Smapping.find(input);  
@@ -53,32 +43,8 @@ int* getRoundeKey(int r)
     }
     return tempK;
 }
-int main()
+int* Coding(int plainWords[16])
 {
-    #define TWO 2;
-    int plainWordsNum=0;
-    while(plainWordsNum<=15)
-    {
-        char c=getchar();
-        if(c=='0'||c=='1')
-        {
-            plainWords[plainWordsNum]=c-48;
-            plainWordsNum++;
-        }
-        //if (plainWordsNum%4==0)getchar();//读掉空格       
-    }
-    //getchar();//读取换行符
-    int kNum=0;
-    while(kNum<=31)
-    {   
-        char c=getchar();
-        if(c=='0'||c=='1')
-        {
-            K[kNum]=c-48;
-            kNum++;
-        }
-        //if (kNum%4==0)getchar();//读掉空格   
-    }
     //以下为具体密码计算过程
     int roundNum=1;
     int tempW[16],tempU[16],tempV[16];
@@ -145,9 +111,39 @@ int main()
     for(int i=0;i<16;i++)
     {
         cyberWords[i]=tempW[i];
-        cout<<cyberWords[i];
-        // if(i%4==3)cout<<" ";
     }
-    // cout<<endl;
-    // system("pause");
+    return cyberWords;
 }
+
+// int main()
+// {
+//     int plainWordsNum=0;
+//     while(plainWordsNum<=15)
+//     {
+//         char c=getchar();
+//         if(c=='0'||c=='1')
+//         {
+//             plainWords[plainWordsNum]=c-48;
+//             plainWordsNum++;
+//         }
+//         //if (plainWordsNum%4==0)getchar();//读掉空格       
+//     }
+//     //getchar();//读取换行符
+//     int kNum=0;
+//     while(kNum<=31)
+//     {   
+//         char c=getchar();
+//         if(c=='0'||c=='1')
+//         {
+//             K[kNum]=c-48;
+//             kNum++;
+//         }
+//         //if (kNum%4==0)getchar();//读掉空格   
+//     }
+//     int* ans=Coding(plainWords);
+//     for(int i=0;i<16;i++)
+//     {
+//         cout<<cyberWords[i];
+//     }
+//     cout<<endl;
+// }

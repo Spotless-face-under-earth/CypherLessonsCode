@@ -7,13 +7,17 @@
             "command": "F:/VSCode/C++complier/mingw64/bin/g++.exe",
             "args": [
                 "-fdiagnostics-color=always",
+                "-std=c++17",
                 "-g", 
-                "${file}",
+                "-I", 
+                "F:/MYCODES/CyberClass/SPNcoding/include",  // 添加头文件目录
+                "F:/MYCODES/CyberClass/SPNcoding/source/SPN.cpp",
+                "F:/MYCODES/CyberClass/SPNcoding/source/LineSDecode.cpp",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}.exe"
+                "F:/MYCODES/CyberClass/SPNcoding/target/LineSDecode.exe"  // 可执行文件输出路径
             ],
             "options": {
-                "cwd": "${fileDirname}"
+                "cwd": "F:/MYCODES/CyberClass/SPNcoding/source"
             },
             "problemMatcher": [
                 "$gcc"

@@ -74,25 +74,18 @@ __int128 RSADecode(long long c)
 	n = static_cast<long long int>(p) * static_cast<long long int>(q);
 	int biosD[100];
 	
-	// if(p==2147483647&&q==65537)
-	// return 67556486952238;
-
 	//这里找到一个不确定数的欧拉函数的计算复杂度非常非常高，能确保p和q都为素数时，欧拉函数可以简单计算
 	//long EuroN=getEuroFunc(n);
 
 	__int128 EuroN=__int128(p-1)*__int128(q-1);
 
-	//cout<<"EuroN ="<<EuroN<<endl;//验证结果正确
 	__int128 d=ReverseEuclid(e,EuroN);
-	//cout<<"d="<<d<<endl;//验证结果正确
 
 	int numD=toBio(biosD,d);
-	//cout<<"Num="<<tempNum<<endl;验证结果正确
 	/*
 	    这里格外要注意，只有在求公私钥时，才模n的欧拉函数；在加解密时，模n！！！
 		!!!m=squareMod(biosD,c,EuroN,numD);!!!
 	*/
-	//m=squareMod(c,d,n);
 	m=squareMod(biosD,c,n,numD);
 	return m;
 }
@@ -106,10 +99,12 @@ __int128 RSAEncode(long long m)
 	n = static_cast<long long int>(p) * static_cast<long long int>(q);
 	int biosE[100];
 	__int128 numE=toBio(biosE,e);
-	//c=squareMod(biosE,m,n,numE);
+	c=squareMod(biosE,m,n,numE);
 	return c;
 }
-
+/*
+	打印128位整数
+*/
 void printInt128(__int128 value) {
     if (value == 0) {
         std::cout << "0";

@@ -1,5 +1,7 @@
 #include "../include/SPNCoding.h"
 #include <iostream>
+#include <random>
+#include <chrono>
 // int K[32]={0};
 // int cyberWords[16]={0};
 // int plainWords[16]={0};
@@ -11,11 +13,12 @@ using namespace std;
     在这里密钥解密的第4-8和12-16位密钥解密式按照电子工业出版社《密码学原理与实践第三版》P59页进行设计；第
 */
 int ActiveSBox[4]={0*m+2,1*m+2,2*m+2,2*m+3};
-int LineralRoundKey[8]={0};
-// 待求解的4-8,12-16位候选密钥
+int LineralRoundKey[16]={0};
+// 待求解的4-8,12-16位候选密钥；二元数组的维度写反了，后面也将就着反的做了
 int candidateKeysA[8][256] = {0};
 // 待求解的0-4,8-12位候选密钥
 int candidateKeysB[8][256] = {0};
+int T=8000;
 int* InversegetRoundeKey(int T)//T为最开始使用的明密文对数
 {
     // 声明一个 8x256 的数组
@@ -33,14 +36,22 @@ int* InversegetRoundeKey(int T)//T为最开始使用的明密文对数
     //明文随机生成，密钥暂时固定（假装不知道）
     string Kstring="00111010100101001101011000111111";
     string Nstring="11011110001100111010010110110001";
+    string Tstring="10011101100000000111011110001010";
     for(int i=0;i<32;i++)
     {
-        K[i]=Nstring[i]-48;
+        K[i]=Kstring[i]-48;
     }
     for(int i=0;i<T;i++)
     {
+        // // 使用当前时间作为种子
+        // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        // // 使用 Mersenne Twister 引擎
+        // std::mt19937 gen(seed);
+        // // 定义一个分布：产生0或1
+        // std::uniform_int_distribution<> dis(0, 1);
         for(int j=0;j<16;j++)
         {
+            // plainWords[j]=dis(gen);
             plainWords[j]=rand()%2;
         }
         int* cyberWords=Coding(plainWords);
@@ -54,7 +65,7 @@ int* InversegetRoundeKey(int T)//T为最开始使用的明密文对数
                     tempV[k]=candidateKeysA[k][j]^cyberWords[1*m+k];
                 }
                 else{
-                    tempV[k]=candidateKeysA[k+4][j]^cyberWords[3*m+k];
+                    tempV[k]=candidateKeysA[k][j]^cyberWords[3*m+k];
                 }
             }
             int inverseTempV[8];
@@ -90,7 +101,7 @@ int* InversegetRoundeKey(int T)//T为最开始使用的明密文对数
             ans=i;
         }
     }
-    cout<<"正确结果T:"<<CandidateKeyNumA[111]<<"******";//正确结果
+    cout<<"正确结果T:"<<CandidateKeyNumA[81]<<"******";//正确结果
     if(ans==0)
     {
         cout<<"No candidate key found"<<endl;
@@ -102,10 +113,19 @@ int* InversegetRoundeKey(int T)//T为最开始使用的明密文对数
     */
     for(int i=0;i<T;i++)
     {
+        // // 使用当前时间作为种子
+        // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        // // 使用 Mersenne Twister 引擎
+        // std::mt19937 gen(seed);
+        // // 定义一个分布：产生0或1
+        // std::uniform_int_distribution<> dis(0, 1);
         for(int j=0;j<16;j++)
         {
+            //plainWords[j]=dis(gen);
+            //cout<<plainWords[j];
             plainWords[j]=rand()%2;
         }
+        //cout<<endl;
         int* cyberWords=Coding(plainWords);
         for(int j=0;j<256;j++)
         {
@@ -113,11 +133,17 @@ int* InversegetRoundeKey(int T)//T为最开始使用的明密文对数
             int tempV[16];
             for(int k=0;k<16;k++)
             {
-                if(k<4||(k>=8&&k<12)){
+                if(k<4){
                     tempV[k]=candidateKeysB[k][j]^cyberWords[k];
                 }
+                else if(k>=8&&k<12){
+                    tempV[k]=candidateKeysB[k-4][j]^cyberWords[k];
+                }
+                else if(k>=12){
+                    tempV[k]=candidateKeysA[k-8][ans]^cyberWords[k];
+                }
                 else{
-                    tempV[k]=candidateKeysB[k][ans]^cyberWords[k];
+                    tempV[k]=candidateKeysA[k-4][ans]^cyberWords[k];
                 }
             }
             int inverseTempV[16];
@@ -135,6 +161,9 @@ int* InversegetRoundeKey(int T)//T为最开始使用的明密文对数
                 inverseValue=inverseValue%2;
                 inverseTempV[k]=inverseValue;
             }
+            /*
+            下面部分异或数据的选择参考了学长的python文件中的代码，具体为什么要选择这些数据我认为是个很关键的问题，However我并不会QAQ
+            */
             int inspectValue1=0,inspectValue2=0;
             inspectValue1=inverseTempV[1]^inverseTempV[5]^inverseTempV[9]^inverseTempV[13]^plainWords[1]^plainWords[2]^plainWords[4];
             if(inspectValue1==0)
@@ -149,22 +178,22 @@ int* InversegetRoundeKey(int T)//T为最开始使用的明密文对数
         }
 
     }
-    int RedLine2=0,ans2=0;
+    int RedLine2=0,ans2=-1;
     for(int i=0;i<256;i++)
     {
         if(abs(CandidateKeyNumB[i]-T)>=RedLine2)
         {
-            RedLine2=abs(CandidateKeyNumB[i]/2-T);
+            RedLine2=abs(CandidateKeyNumB[i]-T)/2;
             ans2=i;
         }
     }
-    // cout<<"正确结果T:"<<CandidateKeyNumB[203]/2<<"******";//正确结果
-    // if(ans2==0)
-    // {
-    //     cout<<"No candidate key found"<<endl;
-    //     return NULL;
-    // }
-    // cout<<"MAX Close to T is "<<RedLine2<<endl;
+    cout<<"正确结果T:"<<CandidateKeyNumB[203]/2<<"******";//正确结果
+    if(ans2==-1)
+    {
+        cout<<"No candidate key found"<<endl;
+        return NULL;
+    }
+    cout<<"MAX Close to T is "<<RedLine2<<endl;
     /*
     合并两部分密钥
     */
@@ -187,7 +216,7 @@ int* InversegetRoundeKey(int T)//T为最开始使用的明密文对数
 int main()
 {
     //顺序不能反，因为InversegetRoundeKey(8000)函数中才对K进行初始化；
-    int* candidateKey2=InversegetRoundeKey(8000);
+    int* candidateKey2=InversegetRoundeKey(T);
     cout<<"Lineral inverse candidate key is:";
     for(int i=0;i<16;i++)
     {
@@ -228,10 +257,10 @@ int main()
     // cout<<endl;
     // system("pause");
     // for (int i = 0; i < 256; ++i) {
-    //     cout << "Combination " << i << ": ";
+    //     cout <<" "<<  i << ": ";
     //     for (int j = 0; j < 8; ++j) {
-    //         cout << candidateKeys[j][i];
+    //         cout << candidateKeysA[j][i];
     //     }
-    //     //std::cout << std::endl;
+        //std::cout << std::endl;
     // }
 }

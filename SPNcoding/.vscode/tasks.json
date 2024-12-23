@@ -9,6 +9,7 @@
                 "-fdiagnostics-color=always",
                 "-std=c++17",
                 "-g", 
+                "-mconsole",
                 "-I", 
                 "F:/MYCODES/CyberClass/SPNcoding/include",  // 添加头文件目录
                 "F:/MYCODES/CyberClass/SPNcoding/source/SPN.cpp",

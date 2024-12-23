@@ -1,6 +1,7 @@
 #include<map>
 #include<iostream>
 #include<string>
+#include<time.h>
 using namespace std;
 //inline 定义全局常量
 inline map<int ,int>Smapping ={{0,14},{1,4},{2,13},{3,1},

@@ -1,36 +1,18 @@
 import random
 import numpy as np
+from concurrent.futures import ProcessPoolExecutor
+# """
+#     这里有个问题，我们都知道线性分析需要找到几个比特进行模拟，找比特时需要尽可能使得偏差的绝对值大，并且异或之后要能够消去某些中间变量。
+#     并且最最重要的一点，各个活动S盒的选取是相互独立的，只需要考虑P盒中的置换输出条件即可。
+#     但是选取合适的活动S盒是一个非常困难的事！！！
+#     在这里密钥解密的第4-8和12-16位密钥解密式按照电子工业出版社《密码学原理与实践第三版》P59页进行设计；
+# """
 
 bit_length = 4  # 每组比特数
 group_count = 4  # 组数
 rounds = 4  # 轮数
 sbox_table = [0xE, 0x4, 0xD, 0x1, 0x2, 0xF, 0xB, 0x8, 0x3, 0xA, 0x6, 0xC, 0x5, 0x9, 0x0, 0x7]  # S盒
 pbox_table = [1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15, 4, 8, 12, 16]  # P盒
-
-
-def apply_sbox(input_bits):
-    '''
-    S盒运算
-    param input_bits: 二进制字符串
-    '''
-    output_bits = ''
-    for i in range(group_count):
-        group = input_bits[i * bit_length: i * bit_length + bit_length]
-        transformed = format(sbox_table[int(group, 2)], '04b')
-        output_bits += transformed
-    return output_bits
-
-
-def apply_pbox(input_bits):
-    '''
-    P盒运算
-    param input_bits: 二进制字符串
-    '''
-    assert len(input_bits) == bit_length * group_count
-    output_bits = ''
-    for i in range(len(input_bits)):
-        output_bits += input_bits[pbox_table[i] - 1]
-    return output_bits
 
 def inverse_sbox(sbox):
     '''
@@ -54,6 +36,28 @@ def bitwise_xor(a, b):
         result += str(int(bit_a) ^ int(bit_b))
     return result
 
+def apply_sbox(input_bits):
+    '''
+    S盒运算
+    param input_bits: 二进制字符串
+    '''
+    output_bits = ''
+    for i in range(group_count):
+        group = input_bits[i * bit_length: i * bit_length + bit_length]
+        transformed = format(sbox_table[int(group, 2)], '04b')
+        output_bits += transformed
+    return output_bits
+
+def apply_pbox(input_bits):
+    '''
+    P盒运算
+    param input_bits: 二进制字符串
+    '''
+    assert len(input_bits) == bit_length * group_count
+    output_bits = ''
+    for i in range(len(input_bits)):
+        output_bits += input_bits[pbox_table[i] - 1]
+    return output_bits
 
 def encrypt_spn(plaintext, key):
     '''
@@ -97,8 +101,8 @@ def create_data_pairs(num_pairs, key):
 
 sbox_table = [0xE, 0x4, 0xD, 0x1, 0x2, 0xF, 0xB, 0x8, 0x3, 0xA, 0x6, 0xC, 0x5, 0x9, 0x0, 0x7]  # S盒
 inverse_sbox_table = inverse_sbox(sbox_table)  # 逆S盒
-data_count = 10  # 每个密钥生成的明文-密文对个数
-key_count = 5  # 待攻击密钥个数
+data_count = 8000  # 每个密钥生成的明文-密文对个数
+key_count = 10  # 待攻击密钥个数
 
 def attack_reverse_spn(data_pairs):
     '''
@@ -122,7 +126,7 @@ def attack_reverse_spn(data_pairs):
                 if z & 1 == 0:
                     counts[L1][L2] += 1
     counts = np.abs(counts - 0.5 * total_pairs)
-    k2, k4 = map(lambda x: x[0], np.where(counts == np.max(counts)))  # 找到最大值的位置
+    k2, k4 = map(lambda x: x[0], np.where(counts == np.max(counts)))  # 找到等于0的次数的最大值
 
     counts1 = np.zeros((16, 16), dtype=int)
     counts2 = np.zeros((16, 16), dtype=int)
@@ -151,14 +155,32 @@ def attack_reverse_spn(data_pairs):
     key = format(k1, '04b') + format(k2, '04b') + format(k3, '04b') + format(k4, '04b')
     return key
 
+def handle_key(key):
+    '''
+    并行处理
+    param key: 密钥
+    '''
+    data_pairs = create_data_pairs(data_count, key)
+    estimated_key = attack_reverse_spn(data_pairs)
+    return key, estimated_key
+
+def display_result(future):
+    '''
+    打印结果
+    '''
+    key, estimated_key = future.result()
+    result_status = 'Right' if key[16:] == estimated_key else 'Wrong'
+    formatted_key = ([key[i:i + 4] for i in range(0, len(key), 4)])
+    formatted_estimated_key = ([estimated_key[i:i + 4] for i in range(0, len(estimated_key), 4)])
+    
+    # 写入并比较原始密钥和推测密钥
+    with open('results.txt', 'a') as file: 
+        file.write(f'key = {formatted_key}\nlineral_decode_key = {formatted_estimated_key}\nresult: {result_status}\n\n')
+
+
 if __name__ == '__main__':
     generated_keys = create_key(key_count)  # 生成密钥
-    for key in generated_keys:
-        data_pairs = create_data_pairs(data_count, key)  # 生成明文-密文对
-        estimated_key = attack_reverse_spn(data_pairs)  # 估计密钥
-
-        result_status = 'Right' if key[16:] == estimated_key else 'Rwong'
-        formatted_key = ' '.join([key[i:i + 4] for i in range(0, len(key), 4)])
-        formatted_estimated_key = ' '.join([estimated_key[i:i + 4] for i in range(0, len(estimated_key), 4)])
-        
-        print(f'key = {formatted_key}\nestimated_key = {formatted_estimated_key}\nresult: {result_status}\n')
+    with ProcessPoolExecutor() as executor:  # 多进程处理
+        answers = [executor.submit(handle_key, key) for key in generated_keys]
+        for ans in answers:
+            ans.add_done_callback(display_result)

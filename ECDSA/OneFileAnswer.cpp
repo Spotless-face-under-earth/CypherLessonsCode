@@ -1,4 +1,3 @@
-// # include "../include/ECC.h"
 #include <iostream>
 using namespace std;
 
